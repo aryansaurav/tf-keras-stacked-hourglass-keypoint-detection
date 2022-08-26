@@ -64,7 +64,7 @@ def main(args):
     model_type = get_model_type(args.num_stacks, args.mobile, args.tiny, args.model_input_shape)
 
     # callbacks for training process
-    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=False, write_grads=False, write_images=False, update_freq='batch')
+    tensorboard = TensorBoard(log_dir=log_dir, histogram_freq=0, write_graph=True, write_grads=False, write_images=False, update_freq='batch')
     eval_callback = EvalCallBack(log_dir, args.dataset_path, class_names, args.model_input_shape, model_type)
     checkpoint_clean = CheckpointCleanCallBack(log_dir, max_val_keep=5)
     terminate_on_nan = TerminateOnNaN()
@@ -101,7 +101,6 @@ def main(args):
 
     print('Create {} Stacked Hourglass model with stack number {}, channel number {}. train input shape {}'.format('Mobile' if args.mobile else '', args.num_stacks, num_channels, args.model_input_shape))
     model.summary()
-
     if args.weights_path:
         model.load_weights(args.weights_path, by_name=True)#, skip_mismatch=True)
         print('Load weights {}.'.format(args.weights_path))

@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image, ImageEnhance
 import cv2
 import math
-
+import tensorflow as tf
 # MPII "scale" parameter use 200 pixel as person height reference
 #
 # http://human-pose.mpi-inf.mpg.de/#download:
@@ -367,9 +367,9 @@ def crop_image(img, center, scale, shape, rotate_angle=0):
     if scale_factor < 2:
         scale_factor = 1
     else:
-        new_size = int(np.math.floor(max(height, width) / scale_factor))
-        new_height = int(np.math.floor(height / scale_factor))
-        new_width = int(np.math.floor(width / scale_factor))
+        new_size = int(tf.math.floor(max(height, width) / scale_factor))
+        new_height = int(tf.math.floor(height / scale_factor))
+        new_width = int(tf.math.floor(width / scale_factor))
         img = np.array(Image.fromarray(img).resize((new_width, new_height), Image.BICUBIC))
         center = center * 1.0 / scale_factor
         scale = scale / scale_factor
@@ -562,21 +562,21 @@ def rotate_single_object(image, keypoints, angle):
 
 # End of Option 2
 ###############################
-
-
-def label_heatmap(img, pt, sigma, type='Gaussian'):
+# @tf.function
+def label_heatmap(img_shape, pt, sigma, type='Gaussian'):
     """
     Create a 2D gaussian label heatmap
     Adopted from https://github.com/anewell/pose-hg-train/blob/master/src/pypose/draw.py
 
     Check that any part of the gaussian is in-bounds
     """
+    img = tf.zeros(shape=img_shape, dtype= float)
     upper_left = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
     bottom_right = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
-    if (upper_left[0] < 0 or upper_left[1] < 0 or
-            bottom_right[0] >= img.shape[1] or bottom_right[1] >= img.shape[0]):
-        # If heatmap extend to image area, just return the image as is
-        return img
+    # if (upper_left[0] < 0 or upper_left[1] < 0 or
+    #         bottom_right[0] >= img.shape[1] or bottom_right[1] >= img.shape[0]):
+    #     # If heatmap extend to image area, just return the image as is
+    #     return img
 
     # Generate gaussian
     size = 6 * sigma + 1
@@ -584,32 +584,47 @@ def label_heatmap(img, pt, sigma, type='Gaussian'):
     y = x[:, np.newaxis]
     x0 = y0 = size // 2
     # The gaussian is not normalized, we want the center value to equal 1
-    if type == 'Gaussian':
-        g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
-    elif type == 'Cauchy':
-        g = sigma / (((x - x0) ** 2 + (y - y0) ** 2 + sigma ** 2) ** 1.5)
 
+    # if type == 'Gaussian':
+    #     g = np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+    # elif type == 'Cauchy':
+    #     g = sigma / (((x - x0) ** 2 + (y - y0) ** 2 + sigma ** 2) ** 1.5)
+    g = tf.constant(np.exp(- ((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2)), dtype=float)
     # Usable gaussian range
-    g_x = [max(0, -upper_left[0]), min(bottom_right[0], img.shape[1]) - upper_left[0]]
-    g_y = [max(0, -upper_left[1]), min(bottom_right[1], img.shape[0]) - upper_left[1]]
+    g_x = [tf.math.maximum(0, -upper_left[0]), tf.math.minimum(bottom_right[0], img.shape[1]) - upper_left[0]]
+    g_y = [tf.math.maximum(0, -upper_left[1]), tf.math.minimum(bottom_right[1], img.shape[0]) - upper_left[1]]
     # Image range
-    img_x = [max(0, upper_left[0]), min(bottom_right[0], img.shape[1])]
-    img_y = [max(0, upper_left[1]), min(bottom_right[1], img.shape[0])]
+    img_x = [tf.math.maximum(0, upper_left[0]), tf.math.minimum(bottom_right[0], img.shape[1])]
+    img_y = [tf.math.maximum(0, upper_left[1]), tf.math.minimum(bottom_right[1], img.shape[0])]
+
+    # g_x = [max(0, -upper_left[0]), min(bottom_right[0], img.shape[1]) - upper_left[0]]
+    # g_y = [max(0, -upper_left[1]), min(bottom_right[1], img.shape[0]) - upper_left[1]]
+    # # Image range
+    # img_x = [max(0, upper_left[0]), min(bottom_right[0], img.shape[1])]
+    # img_y = [max(0, upper_left[1]), min(bottom_right[1], img.shape[0])]
 
     # NOTE: an ugly trick to avoid heatmap size mismatch,
     # which is usually caused by python/numpy calculate error
-    if img_x[1] - img_x[0] > g.shape[0]:
-        img_x[1] -= (img_x[1] - img_x[0]) - g.shape[0]
 
-    if img_y[1] - img_y[0] > g.shape[0]:
-        img_y[1] -= (img_y[1] - img_y[0]) - g.shape[0]
+    # if img_x[1] - img_x[0] > g.shape[0]:
+    #     img_x[1] -= (img_x[1] - img_x[0]) - g.shape[0]
+    #
+    # if img_y[1] - img_y[0] > g.shape[0]:
+    #     img_y[1] -= (img_y[1] - img_y[0]) - g.shape[0]
 
     # Apply heatmap to image
-    img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+    # img[img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[0]:g_y[1], g_x[0]:g_x[1]]
+    # tf.strided_slice(img, [img_y[0], img_x[0]], [img_y[1], img_x[1]]).assign(tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]]))
+    # tf.compat.v1.assign(tf.strided_slice(img, [img_y[0], img_x[0]], [img_y[1], img_x[1]]), tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]]))
 
+    indices_Y, indices_X=tf.meshgrid(tf.range(img_x[0],img_x[1]),  tf.range(img_y[0],img_y[1]))
+    indices = tf.stack([indices_X, indices_Y], axis=-1)
+    updates = tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]])
+    tf.tensor_scatter_nd_update(img, indices, updates)
     return img
 
 
+@tf.function
 def generate_gt_heatmap(keypoints, heatmap_shape, sigma=1):
     """
     generate ground truth keypoints heatmap
@@ -626,15 +641,21 @@ def generate_gt_heatmap(keypoints, heatmap_shape, sigma=1):
                     shape=(heatmap_shape[0], heatmap_shape[1], num_keypoints)
     """
     num_keypoints = keypoints.shape[0]
-    gt_heatmap = np.zeros(shape=(heatmap_shape[0], heatmap_shape[1], num_keypoints), dtype=float)
+    # gt_heatmap = np.zeros(shape=(heatmap_shape[0], heatmap_shape[1], num_keypoints), dtype=float)
+    # gt_heatmap = tf.zeros(shape=(heatmap_shape[0], heatmap_shape[1], num_keypoints), dtype=float)
+    gt_heatmap = tf.TensorArray(tf.float32, size=num_keypoints)
+    zero_gt_heatmap = tf.zeros(shape=(heatmap_shape[0], heatmap_shape[1]), dtype=float)
 
     for i in range(num_keypoints):
         visibility = keypoints[i, 2]
         if visibility > 0:
             # only apply heatmap when visibility = 1.0
-            gt_heatmap[:, :, i] = label_heatmap(gt_heatmap[:, :, i], keypoints[i, :], sigma)
+            gt_heatmap = gt_heatmap.write(i, label_heatmap(heatmap_shape, keypoints[i, :], sigma))
 
-    return gt_heatmap
+    # gt_heatmap = tf.stack(heatmap_stack)
+
+    return tf.transpose(gt_heatmap.stack(), [2,1,0])
+
 
 
 def normalize_image(imgdata, color_mean):

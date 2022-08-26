@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """create Stacked Hourglass model for train."""
 import os, sys
+import tensorflow as tf
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
@@ -32,8 +33,10 @@ def get_hourglass_model(num_classes, num_stacks, num_channels, model_input_shape
         head_next_stage, head_to_loss = hourglass_module(head_next_stage, num_classes, num_channels, bottleneck, i)
         outputs.append(head_to_loss)
 
-    # create multi output model for intermediate supervision training process
+    output_tensor = tf.stack(outputs, axis=-1)
+    # create multi output model for intermed1iate supervision training process
     model = Model(inputs=input_tensor, outputs=outputs)
+    model = Model(inputs=input_tensor, outputs=output_tensor)
 
     return model
 

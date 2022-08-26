@@ -20,7 +20,7 @@ def post_process_heatmap(heatmap, conf_threshold=1e-6):
     """
     keypoint_list = list()
     for i in range(heatmap.shape[-1]):
-        _map = heatmap[:, :, i]
+        _map = heatmap[:, :,i,  0]
         # do a heatmap blur with gaussian_filter
         _map = gaussian_filter(_map, sigma=0.5)
         # get peak point in heatmap with 3x3 max filter
@@ -42,9 +42,9 @@ def post_process_heatmap_simple(heatmap, conf_threshold=1e-6):
     only pick 1 max point in each heatmap as keypoint output
     """
     keypoint_list = list()
-    for i in range(heatmap.shape[-1]):
+    for i in range(heatmap.shape[-2]):
         # ignore last channel, background channel
-        _map = heatmap[:, :, i]
+        _map = heatmap[:, :,i,0]
         # clear value less than conf_threshold
         under_th_indices = _map < conf_threshold
         _map[under_th_indices] = 0
