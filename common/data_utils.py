@@ -573,10 +573,11 @@ def label_heatmap(img_shape, pt, sigma, type='Gaussian'):
     img = tf.zeros(shape=img_shape, dtype= float)
     upper_left = [int(pt[0] - 3 * sigma), int(pt[1] - 3 * sigma)]
     bottom_right = [int(pt[0] + 3 * sigma + 1), int(pt[1] + 3 * sigma + 1)]
-    # if (upper_left[0] < 0 or upper_left[1] < 0 or
-    #         bottom_right[0] >= img.shape[1] or bottom_right[1] >= img.shape[0]):
-    #     # If heatmap extend to image area, just return the image as is
-    #     return img
+    print(upper_left, bottom_right)
+    if (upper_left[0] < 0 or upper_left[1] < 0 or
+            bottom_right[0] >= img.shape[1] or bottom_right[1] >= img.shape[0]):
+        # If heatmap extend to image area, just return the image as is
+        return img
 
     # Generate gaussian
     size = 6 * sigma + 1
@@ -617,11 +618,16 @@ def label_heatmap(img_shape, pt, sigma, type='Gaussian'):
     # tf.strided_slice(img, [img_y[0], img_x[0]], [img_y[1], img_x[1]]).assign(tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]]))
     # tf.compat.v1.assign(tf.strided_slice(img, [img_y[0], img_x[0]], [img_y[1], img_x[1]]), tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]]))
 
+    # print("Img_x: ", img_x)
+    # print("Img_y: ", img_y)
+
     indices_Y, indices_X=tf.meshgrid(tf.range(img_x[0],img_x[1]),  tf.range(img_y[0],img_y[1]))
     indices = tf.stack([indices_X, indices_Y], axis=-1)
     updates = tf.strided_slice(g, [g_y[0], g_x[0]], [g_y[1], g_x[1]])
-    tf.tensor_scatter_nd_update(img, indices, updates)
-    return img
+
+    # print("Updates shape: ", updates.shape, " Indices shape: ", indices.shape, "img shape: ", img.shape)
+    return tf.tensor_scatter_nd_update(img, indices, updates)
+
 
 
 @tf.function
