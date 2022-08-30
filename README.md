@@ -1,5 +1,10 @@
 # TF Keras Stacked Hourglass Networks for Keypoint Estimation
 
+## Updates in this Fork
+Forked this repository (see the source above) and updated to parallize the data input pipeline for loading data. The training now runs faster by a factor of 8X - 10 X, each epoch taking about 3 mins (+ 7 mins for validation) instead of 40 mins (+ 7 mins for validation) per epoch without this update. Tested on RTX A5000 series GPU machines available on vast.ai and also on Google Cloud machines.
+
+To use this forked updates, work in the train.ipynb jupyter notebook instead of running the train.py as shown in the instructions below (from the source package). All the command line arguments have been moved into the first cells of the jupyter notebook. Just an easier way to work when training on cloud infra!
+
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
 ## Introduction
