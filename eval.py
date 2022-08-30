@@ -520,6 +520,39 @@ def eval_PCK(model, model_format, eval_dataset, class_names, model_input_shape, 
     return total_accuracy, accuracy_dict
 
 
+def eval_PCK_new(model, model_format, eval_dataset, class_names , model_input_shape, score_threshold, normalize, conf_threshold, save_result=False, skeleton_lines=None):
+    succeed_dict = {class_name: 0 for class_name in class_names}
+    fail_dict = {class_name: 0 for class_name in class_names}
+    accuracy_dict = {class_name: 0. for class_name in class_names}
+
+    batch_size = int(eval_dataset.element_spec[0].shape[0])
+
+    pbar = tqdm(total=len(eval_dataset), desc='Eval model')
+    for batch in iter(eval_dataset):
+        prediction = model.predict_on_batch(batch[0])
+        # pred_keypoints = tf.TensorArray(tf.double, size=batch_size)
+        for i in range(0, batch_size):
+            pred_keypoints = tf.stack(post_process_heatmap_simple(prediction[i][:,:,:,1], conf_threshold))
+            result_list = keypoint_accuracy(pred_keypoints, batch[1][i], score_threshold, normalize)
+            for i, class_name in enumerate(class_names):
+                if result_list[i] == 0:
+                    fail_dict[class_name] = fail_dict[class_name] + 1
+                elif result_list[i] == 1:
+                    succeed_dict[class_name] = succeed_dict[class_name] + 1
+
+        pbar.update(1)
+    pbar.close()
+
+    for i, class_name in enumerate(class_names):
+        accuracy_dict[class_name] = succeed_dict[class_name] * 1.0 / (succeed_dict[class_name] + fail_dict[class_name])
+
+    total_succeed = np.sum(list(succeed_dict.values()))
+    total_fail = np.sum(list(fail_dict.values()))
+    total_accuracy = total_succeed * 1.0 / (total_fail + total_succeed)
+
+    return total_accuracy, accuracy_dict
+
+
 #load TF 1.x frozen pb graph
 def load_graph(model_path):
     # check tf version to be compatible with TF 2.x

@@ -42,9 +42,9 @@ def post_process_heatmap_simple(heatmap, conf_threshold=1e-6):
     only pick 1 max point in each heatmap as keypoint output
     """
     keypoint_list = list()
-    for i in range(heatmap.shape[-2]):
+    for i in range(heatmap.shape[-1]):
         # ignore last channel, background channel
-        _map = heatmap[:, :,i,0]
+        _map = heatmap[:, :,i]
         # clear value less than conf_threshold
         under_th_indices = _map < conf_threshold
         _map[under_th_indices] = 0
