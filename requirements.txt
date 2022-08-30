@@ -8,7 +8,7 @@ tensorflow-model-optimization
 matplotlib
 tqdm
 pillow
-mnn
+mnn==1.1.3
 keras2onnx
 tf2onnx
 pycocotools
