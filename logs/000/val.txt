@@ -1,1 +1,2 @@
-model:hg_s2_256_256;dataset:MPI
+model:hg_s2_mobile_256_256
+Epoch 0:0.004574107366360968
