@@ -1,2 +1,1 @@
-model:hg_s2_mobile_256_256
-Epoch 0:0.004574107366360968
+model:hg_s2_mobile_tiny_256_256

@@ -525,13 +525,13 @@ def eval_PCK_new(model, model_format, eval_dataset, class_names , model_input_sh
     fail_dict = {class_name: 0 for class_name in class_names}
     accuracy_dict = {class_name: 0. for class_name in class_names}
 
-    batch_size = int(eval_dataset.element_spec[0].shape[0])
+    # batch_size = int(eval_dataset.element_spec[0].shape[0])
 
     pbar = tqdm(total=len(eval_dataset), desc='Eval model')
     for batch in iter(eval_dataset):
         prediction = model.predict_on_batch(batch[0])
         # pred_keypoints = tf.TensorArray(tf.double, size=batch_size)
-        for i in range(0, batch_size):
+        for i in range(0, len(prediction)):
             pred_keypoints = tf.stack(post_process_heatmap_simple(prediction[i][:,:,:,1], conf_threshold))
             result_list = keypoint_accuracy(pred_keypoints, batch[1][i], score_threshold, normalize)
             for i, class_name in enumerate(class_names):
