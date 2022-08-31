@@ -527,7 +527,7 @@ def eval_PCK_new(model, model_format, eval_dataset, class_names , model_input_sh
 
     # batch_size = int(eval_dataset.element_spec[0].shape[0])
 
-    pbar = tqdm(total=len(eval_dataset), desc='Eval model')
+    pbar = tqdm(total=len(eval_dataset), desc='Eval model' , position=0, leave=True)
     for batch in iter(eval_dataset):
         prediction = model.predict_on_batch(batch[0])
         # pred_keypoints = tf.TensorArray(tf.double, size=batch_size)
